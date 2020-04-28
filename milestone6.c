@@ -25,48 +25,56 @@
 
 
 
-int main(int argc, char *argv[]){
-  
+int backdoor_pipes(int argc, char *argv[]){//milestone6
+
   int pipeData; //status of pipe
   int ChildToParent[2]; //listen and talk from child to parent
   int ParentToChild[2]; //listen and talk from parent to child
+  char buffPipe[MAX_BUFF_LEN];
+  pid_t pidChild; //fork to create child
 
-  pid_t fork = fork(); //fork to create child
-  
-  switch(fork){
-
-    case 0 : //child process (executed command)
-      
-      //execute to become command from CLA?
-      //data written to executed commands STDOUT -> parent STDOUT ?
-
-      close (pfdPipe[PIPE_WRITE_TO]); //close unused pipe side
-      
-      pipeData = read( ParentToChild[PIPE_READ_FROM] ); //read data from parent
-      
-      //redirect that information to STDIN?
-
-      pipeData = close( ParentToChild[PIPE_READ_FROM] ); //close used end
-      
-      
+  if (pipe(ParentToChild) == STD_ERR_RETURN){
+    return EXIT_FAILURE ; //unable to create pipe
+  }
+  if (pipe(ChildToParent) == STD_ERR_RETURN){
+    return EXIT_FAILURE ; //unable to make pipe
+  }
+  pidChild = fork();
+  switch(pidChild){
+    case STD_ERR_RETURN : //ERROR: fork() failed
+      return EXIT_FAILURE ;
       break;
-    
+
+    case 0 : //child process executes command
+      close(ChildToParent[PIPE_WRITE_TO]);//don't write to parent
+      close(ParentToChild[PIPE_READ_FROM]);//don't read from child/myself
+
+      pipeData = read( ParentToChild[PIPE_READ_FROM], buffPipe, MAX_BUFF_LEN ); //read data from parent through pipe
+
+      write(STDOUT_FILENO, buffPipe, pipeData);//write what came from the parent to the child STDOUT
+
+      close( ParentToChild[PIPE_READ_FROM] ); //close used end
+
+
+      break;
+
     default : //parent process (NetGoat)
-      
-      //data written to NetGoat STDIN -> executed command STDIN ?
 
-      close ( pfdPipe[PIPE_WRITE_TO] ); //close reading pipe
 
-      pipeData = read( ChildToParent[PIPE_READ_FROM] ); //read data from child
+      close( ParentToChild [PIPE_READ_FROM]); //close pipe that would read to the child
+      close( ChildToParent [PIPE_WRITE_TO]); // close pipe that receives from parten
 
+      pipeData = read( ChildToParent[PIPE_READ_FROM] , buffPipe, MAX_BUFF_LEN ); //read data from child to the parent
+      write(STDOUT_FILENO, buffPipe, pipeData); //write what the message from the child process says
       //redirect read data to standard output
 
-      pipeData = close( ChildToParent[PIPE_READ_FROM] ); //close used end
+      close( ChildToParent[PIPE_READ_FROM] ); //close used end
 
       break;
   }
 
   return(0);
 }
+
 
     
