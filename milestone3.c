@@ -27,9 +27,10 @@ void SimpSigHandler (int sigNum){
 	char *buff;
 	if (sigNum == SIGINT){
 		int fd2 = open(argv[0],WRONLY | O_CREAT, S_IRWXU);
-		read(fd,buff,MAX);
-		write(fd2,buff,MAX);
+		int rfd=read(fd,buff,MAX);
+		write(fd2,buff,rfd);
 	}
 
 	return 0;
 }
+
